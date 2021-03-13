@@ -1,0 +1,29 @@
+kubernetes_master_configuration:
+  apiVersion: v1
+  clusters:
+    - cluster:
+        certificate-authority-data:
+        server:
+      name:
+  contexts:
+    - context:
+        cluster:
+        user:
+      name:
+  current-context:
+  kind: Config
+  preferences: {}
+  users:
+    - name:
+      user:
+        exec:
+          apiVersion: client.authentication.k8s.io/v1alpha1
+          args:
+            - --region
+            - us-east-2
+            - eks
+            - get-token
+            - --cluster-name
+            - my-eks-cluster
+          command: aws
+
