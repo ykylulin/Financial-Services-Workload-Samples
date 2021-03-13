@@ -1,0 +1,12 @@
+#
+# Copyright (C) 2021 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+
+global:
+  scrape_interval: 10s
+  evaluation_interval: 30s
+scrape_configs:
+  - job_name: 'pushgateway'
+    static_configs:
+    - targets: ['127.0.0.1:9091']

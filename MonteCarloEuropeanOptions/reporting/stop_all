@@ -1,0 +1,10 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2021 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+
+docker stop grafana
+docker kill prometheus pushgateway
+docker rm prometheus pushgateway

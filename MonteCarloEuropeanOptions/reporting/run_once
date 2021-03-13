@@ -1,0 +1,8 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2021 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+
+docker run --name grafana -d --network host -e "GF_SECURITY_ADMIN_PASSWORD=password" grafana/grafana

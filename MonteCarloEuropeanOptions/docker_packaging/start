@@ -1,0 +1,39 @@
+#! /bin/bash
+
+#
+# Copyright (C) 2021 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+
+if [ "$PAUSE_TIME" == "" ]; then
+	PAUSE_TIME=60
+fi
+
+if [ "$PR" == "" ]; then
+        PR=1
+fi
+echo PR=$PR
+echo PUSHGWIP=$PUSHGWIP
+
+echo -n "CPUs assigned by CPU manager: "
+cat /sys/fs/cgroup/cpuset/cpuset.cpus
+export CPUS=` cat /sys/fs/cgroup/cpuset/cpuset.cpus | awk ' { split($0,a,","); for (i in a) { split(a[i],b,"-"); print b[1]; if (b[2]!="") for (j=b[1]+1;j<=b[2];j++) print j; } } ' `
+echo "CPUS=" $CPUS
+
+while [ 1 ]
+do
+        if [ "$USE_AVX512" == "1" ] && [ ` grep -c avx512 /proc/cpuinfo ` != 0 ]; then
+                r=` ./run --withAVX512 $PR `
+                echo $r
+                if [ "$PUSHGWIP" != "" ]; then
+                        echo time_elapsed $r | curl --connect-timeout 5 --data-binary @- http://$PUSHGWIP:9091/metrics/job/montecarlo/instance/avx512
+                fi
+        else
+                r=` ./run $PR `
+                echo $r
+                if [ "$PUSHGWIP" != "" ]; then
+                        echo time_elapsed $r | curl --connect-timeout 5 --data-binary @- http://$PUSHGWIP:9091/metrics/job/montecarlo/instance/avx2
+                fi
+        fi
+	sleep $PAUSE_TIME
+done

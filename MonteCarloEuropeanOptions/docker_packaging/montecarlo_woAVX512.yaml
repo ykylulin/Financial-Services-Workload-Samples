@@ -1,0 +1,36 @@
+#
+# Copyright (C) 2021 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+apiVersion: v1
+kind: Pod
+metadata:
+  name: montecarloavx2
+  labels:
+    name: montecarloavx2
+spec:
+  restartPolicy: Never
+#  nodeSelector:
+#    kubernetes.io/hostname: k8s-node1
+  containers:
+  - name: montecarlo
+    image: ptorre/montecarlo
+    imagePullPolicy: Always
+    command: ["/app/start"]
+    #command: ["sleep", "infinity"]
+    env:
+    - name: USE_TASKSET # until I figure out how to recognize it in script
+      value: "1"
+    - name: PAUSE_TIME
+      value: "10" # seconds
+    - name: PR # processes
+      value: "2"
+    - name: PUSHGWIP
+      value: "3.16.33.133"
+    resources:
+      requests:
+        memory: "500Mi"
+        cpu: "2"
+      limits:
+        memory: "500Mi"
+        cpu: "2"

@@ -1,0 +1,10 @@
+#! /bin/bash -v
+
+#
+# Copyright (C) 2021 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+
+./stop_all
+./start_all
+
