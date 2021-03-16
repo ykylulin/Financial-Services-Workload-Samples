@@ -1,3 +1,7 @@
+#
+# Copyright (C) 2021 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
 module "vpc" {
   source = "github.com/reactiveops/terraform-vpc.git?ref=v5.0.1"
   aws_region = "us-east-2"
