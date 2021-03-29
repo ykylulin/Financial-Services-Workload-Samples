@@ -1,96 +1,86 @@
-#! /bin/bash
-
+#!/bin/bash
 #
 # Copyright (C) 2021 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 #
 
-#DEBUG=1
+# Set to 1 to enable debugging
+DEBUG=1
 
-USAGE="USAGE: run [--withAVX512] <processes>"
-
-if [ ! -n "$1" ]; then
-        echo $USAGE
-        exit 1
-fi
-if [ "$1" == "--withAVX512" ]; then
-        export withavx512=1
-        export MKL_ENABLE_INSTRUCTIONS=AVX512
-        if [ ! -n "$2" ]; then
-                echo $USAGE
-                exit 1
-        fi
-        export PR="$2"
-else
-        export MKL_ENABLE_INSTRUCTIONS=AVX2
-        export PR="$1"
-fi
-
-if [ $DEBUG ]; then
-        echo MKL_ENABLE_INSTRUCTIONS=$MKL_ENABLE_INSTRUCTIONS
-        echo PR=$PR
-	echo CPUS=$CPUS
-        echo -n "Running"
-fi
+LOG_FILE="/app/log"
 
 export LD_LIBRARY_PATH=/app:${LD_LIBRARY_PATH}
 
-mkdir tmp
-#if [ "$CPUS" == "" ]; then # no CPU Manager
-if [ !$USE_TASKSET ]; then # use environment variable until I figure out how to recognize if there is working CPU Manager
-        # CPUSSELECTED=` seq 0 $(($PR - 1)) `
-	#CPUSSELECTED=""
-	for i in ` seq 0 $(($PR - 1)) `
-	do
-		if [ $withavx512 ]; then
-			./MonteCarloInsideBlockingDP.avx512 1 8192 262144 8k > tmp/results$i.txt 2>&1 &
-		else
-			./MonteCarloInsideBlockingDP.avx2 1 8192 262144 8k > tmp/results$i.txt 2>&1 &
-		fi
-	done
-else # with CPU Manager
-	# if [ $withavx512 ]; then
-		# select 0 1...
-	CPUSSELECTED=` echo $CPUS | awk -v pr=$PR ' { split($0,a," "); for (i=1;i<=pr;i++) { printf("%s\n",a[i]) } } ' `
-	for i in $CPUSSELECTED
-	do
-		if [ $withavx512 ]; then
-			taskset -c $i ./MonteCarloInsideBlockingDP.avx512 1 8192 262144 8k > tmp/results$i.txt 2>&1 &
-		else
-			taskset -c $i ./MonteCarloInsideBlockingDP.avx2 1 8192 262144 8k > tmp/results$i.txt 2>&1 &
-		fi
-	done
-	# else
-		# CPUSSELECTED=` echo $CPUS | awk -v pr=$PR ' { n=split($0,a," "); for (i=n;i>n-pr;i--) print a[i]; } ' `
-	# fi
+log() { [ ! -z "${1}" ] && echo "${1}" >> ${LOG_FILE}; }
+
+print_usage() { echo "USAGE: run [--withAVX512] <processes>"; }
+
+check_assigned_cpus()
+{
+	CPUSET="$(cat /sys/fs/cgroup/cpuset/cpuset.cpus)"
+	CPUS="$(echo "${CPUSET}" | awk '{ split($0,a,","); for (i in a) { split(a[i],b,"-"); print b[1]; if (b[2]!="") for (j=b[1]+1;j<=b[2];j++) print j; } }')"
+	log "CPUs assigned by CPU manager: CPUSET=${CPUSET} CPUS=$CPUS"
+}
+
+if [ ! -n "${1}" ]; then
+	print_usage && exit 1
 fi
 
-#for i in $CPUSSELECTED
-#do
-        #if [ $withavx512 ]; then
-                #taskset -c $i ./MonteCarloInsideBlockingDP.avx512 1 8192 262144 8k > tmp/results$i.txt 2>&1 &
-        #else
-                #taskset -c $i ./MonteCarloInsideBlockingDP.avx2 1 8192 262144 8k > tmp/results$i.txt 2>&1 &
-        #fi
-#done
+if [ "${1}" == "--withAVX512" ]; then
+	export withavx512="1"
+	export MKL_ENABLE_INSTRUCTIONS="AVX512"
+	if [ ! -n "${2}" ]; then
+		print_usage && exit 1
+	fi
+	export PR="${2}"
+else
+	export MKL_ENABLE_INSTRUCTIONS="AVX2"
+	export PR="${1}"
+fi
 
-while [ ` ps | awk ' $4=="MonteCarloInsid" { i++ } END { print i } ' ` ]
-do
-        if [ $DEBUG ]; then
-                echo -n "."
-        fi
-        sleep 1
+check_assigned_cpus
+
+if [ "${DEBUG}" == "1" ]; then
+	log "MKL_ENABLE_INSTRUCTIONS = ${MKL_ENABLE_INSTRUCTIONS}"
+	log "PR = ${PR}"
+	log "CPUS = ${CPUS}"
+	log "Running"
+fi
+
+mkdir /app/tmp
+
+CPUSSELECTED="$(echo "$CPUS" | awk -v pr="$PR" ' { split($0,a," "); for (i=1;i<=pr;i++) { printf("%s\n",a[i]) } } ')"
+log "CPUSSELECTED=${CPUSSELECTED}"
+PR_STARTED="0"
+for i in ${CPUSSELECTED}; do
+	PR_STARTED=$((PR_STARTED+1))
+
+	if [ "${USE_TASKSET}" == "1" ]; then
+		TASKSET="taskset -c $i"
+	else
+		TASKSET=""
+	fi
+
+	if [ $withavx512 ]; then
+		avx="avx512"
+	else
+		avx="avx2"
+	fi
+
+	log "TASKSET=${TASKSET} avx=${avx}"
+
+	${TASKSET} ./MonteCarloInsideBlockingDP.${avx} 1 8192 262144 8k > "tmp/results$i.txt" 2>&1 &
+
+	[ "${PR_STARTED}" -ge "${PR}" ] && log "Number of started instances reached desired limit" && break
 done
-if [ $DEBUG ]; then
-        echo
-fi
 
-#for i in $CPUSSELECTED
-#do
-   #cat tmp/results$i.txt | grep Elapsed >> tmp/results.txt
-#done
+# Wait for test completion
+while [ "$(ps | awk ' $4=="MonteCarloInsid" { i++ } END { print i } ')" ]; do
+	[ "${DEBUG}" == "1" ] && log "."
+	sleep 1
+done
+
 cat tmp/results*.txt | grep Elapsed >> tmp/elapsedtimes.txt
-#awk -v pr=$PR '{ s+=$4 } END { print s/pr }' tmp/results.txt
-awk -v pr=$PR '{ s+=$4 } END { print s/pr }' tmp/elapsedtimes.txt
+awk -v pr="${PR}" '{ s+=$4 } END { print s/pr }' tmp/elapsedtimes.txt
 
-rm -rf tmp
+rm -rf /app/tmp

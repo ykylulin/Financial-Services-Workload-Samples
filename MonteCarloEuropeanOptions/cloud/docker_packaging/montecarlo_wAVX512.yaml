@@ -13,7 +13,7 @@ spec:
   nodeSelector:
     #node.alpha.kubernetes-incubator.io/nfd-cpuid-AVX512BW: "true"
     feature.node.kubernetes.io/cpu-cpuid.AVX512BW: "true"
-#   kubernetes.io/hostname: k8s-node1
+    #kubernetes.io/hostname: k8s-node1
   containers:
   - name: montecarlo
     image: ptorre/montecarlo
@@ -21,16 +21,16 @@ spec:
     command: ["/app/start"]
     #command: ["sleep", "infinity"]
     env:
-    - name: USE_TASKSET # until I figure out how to recognize it in script
+    - name: USE_TASKSET
       value: "1"
-    - name: PAUSE_TIME
-      value: "10" # seconds
+    - name: PAUSE_TIME # seconds
+      value: "10"
     - name: PR # processes
       value: "2"
     - name: USE_AVX512
       value: "1"
     - name: PUSHGWIP
-      value: "3.16.33.133"
+      value: "192.168.0.235"
     resources:
       requests:
         memory: "500Mi"

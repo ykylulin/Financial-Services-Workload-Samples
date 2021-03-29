@@ -1,39 +1,31 @@
-#! /bin/bash
-
+#!/bin/bash
 #
 # Copyright (C) 2021 Intel Corporation
 # SPDX-License-Identifier: Apache-2.0
 #
 
-if [ "$PAUSE_TIME" == "" ]; then
-	PAUSE_TIME=60
-fi
+LOG_FILE="/app/log"
 
-if [ "$PR" == "" ]; then
-        PR=1
-fi
-echo PR=$PR
-echo PUSHGWIP=$PUSHGWIP
+log() { [ ! -z "${1}" ] && echo -e "${1}" >> ${LOG_FILE}; }
 
-echo -n "CPUs assigned by CPU manager: "
-cat /sys/fs/cgroup/cpuset/cpuset.cpus
-export CPUS=` cat /sys/fs/cgroup/cpuset/cpuset.cpus | awk ' { split($0,a,","); for (i in a) { split(a[i],b,"-"); print b[1]; if (b[2]!="") for (j=b[1]+1;j<=b[2];j++) print j; } } ' `
-echo "CPUS=" $CPUS
+[ -z "${PAUSE_TIME}" ] && PAUSE_TIME=60
+[ -z "${PR}" ] && PR=1
 
-while [ 1 ]
-do
-        if [ "$USE_AVX512" == "1" ] && [ ` grep -c avx512 /proc/cpuinfo ` != 0 ]; then
-                r=` ./run --withAVX512 $PR `
-                echo $r
-                if [ "$PUSHGWIP" != "" ]; then
-                        echo time_elapsed $r | curl --connect-timeout 5 --data-binary @- http://$PUSHGWIP:9091/metrics/job/montecarlo/instance/avx512
-                fi
-        else
-                r=` ./run $PR `
-                echo $r
-                if [ "$PUSHGWIP" != "" ]; then
-                        echo time_elapsed $r | curl --connect-timeout 5 --data-binary @- http://$PUSHGWIP:9091/metrics/job/montecarlo/instance/avx2
-                fi
-        fi
-	sleep $PAUSE_TIME
+log "PAUSE_TIME=${PAUSE_TIME}\nPR=${PR}\nPUSHGWIP=${PUSHGWIP}"
+
+while [ ! -f /app/stop ]; do
+	if [ "${USE_AVX512}" == "1" ] && [ "$(grep -c avx512 /proc/cpuinfo)" != "0" ]; then
+		r=$(./run --withAVX512 ${PR})
+		log "${r}"
+		if [ "${PUSHGWIP}" != "" ]; then
+			echo "time_elapsed ${r}" | curl --connect-timeout 5 --data-binary @- "http://${PUSHGWIP}:9091/metrics/job/montecarlo/instance/avx512"
+		fi
+	else
+		r=$(./run ${PR})
+		log "${r}"
+		if [ "${PUSHGWIP}" != "" ]; then
+			echo "time_elapsed ${r}" | curl --connect-timeout 5 --data-binary @- "http://${PUSHGWIP}:9091/metrics/job/montecarlo/instance/avx2"
+		fi
+	fi
+	sleep ${PAUSE_TIME}
 done
