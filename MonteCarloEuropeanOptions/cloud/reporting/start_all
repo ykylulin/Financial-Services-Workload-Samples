@@ -6,5 +6,5 @@
 #
 
 docker run --name pushgateway -d --network host prom/pushgateway
-docker run --name prometheus -d --network host -v $WORK_DIR/Financial-Services-Workload-Samples/MonteCarloEuropeanOptions/cloud/reporting/prometheus.yml:/etc/prometheus/prometheus.yml prom/prometheus
+docker run --name prometheus -d --network host -v "$WORK_DIR/Financial-Services-Workload-Samples/MonteCarloEuropeanOptions/cloud/reporting/prometheus.yml:/etc/prometheus/prometheus.yml" prom/prometheus
 docker start grafana
