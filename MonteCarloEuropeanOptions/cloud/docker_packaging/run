@@ -11,7 +11,7 @@ LOG_FILE="/app/log"
 
 export LD_LIBRARY_PATH=/app:${LD_LIBRARY_PATH}
 
-log() { [ ! -z "${1}" ] && echo "${1}" >> ${LOG_FILE}; }
+log() { [ ! -z "${1}" ] && echo -e "${1}" >> ${LOG_FILE}; }
 
 print_usage() { echo "USAGE: run [--withAVX512] <processes>"; }
 
@@ -22,9 +22,8 @@ check_assigned_cpus()
 	log "CPUs assigned by CPU manager: CPUSET=${CPUSET} CPUS=$CPUS"
 }
 
-if [ ! -n "${1}" ]; then
-	print_usage && exit 1
-fi
+# Parse params
+[ ! -n "${1}" ] && print_usage && exit 1
 
 if [ "${1}" == "--withAVX512" ]; then
 	export withavx512="1"
@@ -40,12 +39,7 @@ fi
 
 check_assigned_cpus
 
-if [ "${DEBUG}" == "1" ]; then
-	log "MKL_ENABLE_INSTRUCTIONS = ${MKL_ENABLE_INSTRUCTIONS}"
-	log "PR = ${PR}"
-	log "CPUS = ${CPUS}"
-	log "Running"
-fi
+[ "${DEBUG}" == "1" ] && log "MKL_ENABLE_INSTRUCTIONS = ${MKL_ENABLE_INSTRUCTIONS}\nPR = ${PR}\nCPUS = ${CPUS}\nRunning"
 
 mkdir /app/tmp
 
@@ -55,11 +49,8 @@ PR_STARTED="0"
 for i in ${CPUSSELECTED}; do
 	PR_STARTED=$((PR_STARTED+1))
 
-	if [ "${USE_TASKSET}" == "1" ]; then
-		TASKSET="taskset -c $i"
-	else
-		TASKSET=""
-	fi
+	TASKSET=""
+	[ "${USE_TASKSET}" == "1" ] && TASKSET="taskset -c $i"
 
 	if [ $withavx512 ]; then
 		avx="avx512"
