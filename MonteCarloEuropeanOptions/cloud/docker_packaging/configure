@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# Copyright (C) 2021 Intel Corporation
+# SPDX-License-Identifier: Apache-2.0
+#
+
+if [ -z "${DOCKERHUBUSER}" ]; then
+	echo "Error: set environment variable DOCKERHUBUSER"
+	exit 1
+fi
+
+if [ -z "${PUSHGWIP}" ]; then
+	echo "Error: set environment variable PUSHGWIP"
+	exit 1
+fi
+
+rm -f montecarlo_wAVX512.yaml montecarlo_woAVX512.yaml
+sed "s/dockerhubuser/${DOCKERHUBUSER}/g ; s/pushgwip/${PUSHGWIP}/g" < montecarlo_wAVX512.yaml_template > montecarlo_wAVX512.yaml
+sed "s/dockerhubuser/${DOCKERHUBUSER}/g ; s/pushgwip/${PUSHGWIP}/g" < montecarlo_woAVX512.yaml_template > montecarlo_woAVX512.yaml
+ls montecarlo_wAVX512.yaml montecarlo_woAVX512.yaml
+
