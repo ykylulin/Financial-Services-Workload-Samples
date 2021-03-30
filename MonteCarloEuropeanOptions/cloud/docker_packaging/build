@@ -9,6 +9,11 @@ if [ -z "${DOCKERHUBUSER}" ]; then
 	exit 1
 fi
 
+if [ -z "${PUSHGWIP}" ]; then
+	echo "Error: set environment variable PUSHGWIP"
+	exit 1
+fi
+
 if [ ! -e ../../MonteCarloInsideBlockingDP.avx512 ] || [ ! -e ../../MonteCarloInsideBlockingDP.avx2 ]; then
 	echo "Error: compile Monte Carlo binary for AVX-512 and AVX2 before building Docker image"
 	exit 1
@@ -24,3 +29,9 @@ cp -u ../../MonteCarloInsideBlockingDP.avx512 ../../MonteCarloInsideBlockingDP.a
 docker build . -t "${DOCKERHUBUSER}/montecarlo"
 docker login
 docker push "${DOCKERHUBUSER}/montecarlo"
+
+rm -f montecarlo_wAVX512.yaml montecarlo_woAVX512.yaml
+sed "s/dockerhubuser/${DOCKERHUBUSER}/g ; s/pushgwip/${PUSHGWIP}/g" < montecarlo_wAVX512.yaml_template > montecarlo_wAVX512.yaml
+sed "s/dockerhubuser/${DOCKERHUBUSER}/g ; s/pushgwip/${PUSHGWIP}/g" < montecarlo_woAVX512.yaml_template > montecarlo_woAVX512.yaml
+ls montecarlo_wAVX512.yaml montecarlo_woAVX512.yaml
+

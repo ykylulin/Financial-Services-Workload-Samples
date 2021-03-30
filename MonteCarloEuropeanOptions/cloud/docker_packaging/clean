@@ -5,4 +5,4 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-rm -f MonteCarloInsideBlockingDP.avx512 MonteCarloInsideBlockingDP.avx2 libiomp5.so libtbbmalloc.so.2
+rm -f MonteCarloInsideBlockingDP.avx512 MonteCarloInsideBlockingDP.avx2 libiomp5.so libtbbmalloc.so.2 montecarlo_wAVX512.yaml montecarlo_woAVX512.yaml
