@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: Apache-2.0
 #
 
-if [ "$DOCKERHUBUSER" == "" ]; then
+if [ -z "${DOCKERHUBUSER}" ]; then
 	echo "Error: set environment variable DOCKERHUBUSER"
 	exit 1
 fi
@@ -21,6 +21,6 @@ fi
 
 cp -u ../../MonteCarloInsideBlockingDP.avx512 ../../MonteCarloInsideBlockingDP.avx2 ../../libiomp5.so ../../libtbbmalloc.so.2 .
 
-docker build . -t $DOCKERHUBUSER/montecarlo
+docker build . -t "${DOCKERHUBUSER}/montecarlo"
 docker login
-docker push $DOCKERHUBUSER/montecarlo
+docker push "${DOCKERHUBUSER}/montecarlo"
