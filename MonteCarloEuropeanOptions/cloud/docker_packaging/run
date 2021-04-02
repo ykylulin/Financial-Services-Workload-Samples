@@ -11,7 +11,7 @@ LOG_FILE="/app/log"
 
 export LD_LIBRARY_PATH=/app:${LD_LIBRARY_PATH}
 
-log() { [ ! -z "${1}" ] && echo -e "${1}" >> ${LOG_FILE}; }
+log() { [ -n "${1}" ] && echo -e "${1}" >> ${LOG_FILE}; }
 
 print_usage() { echo "USAGE: run [--withAVX512] <processes>"; }
 
@@ -23,12 +23,12 @@ check_assigned_cpus()
 }
 
 # Parse params
-[ ! -n "${1}" ] && print_usage && exit 1
+[ -z "${1}" ] && print_usage && exit 1
 
 if [ "${1}" == "--withAVX512" ]; then
 	export withavx512="1"
 	export MKL_ENABLE_INSTRUCTIONS="AVX512"
-	if [ ! -n "${2}" ]; then
+	if [ -z "${2}" ]; then
 		print_usage && exit 1
 	fi
 	export PR="${2}"
