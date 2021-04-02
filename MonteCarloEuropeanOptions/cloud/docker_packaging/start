@@ -6,7 +6,7 @@
 
 LOG_FILE="/app/log"
 
-log() { [ ! -z "${1}" ] && echo -e "${1}" >> ${LOG_FILE}; }
+log() { [ -n "${1}" ] && echo -e "${1}" >> ${LOG_FILE}; }
 
 [ -z "${PAUSE_TIME}" ] && PAUSE_TIME=60
 [ -z "${PR}" ] && PR=1
